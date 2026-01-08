@@ -1,41 +1,39 @@
-const mysql = require("mysql2");
+// File: supabase.js (ATAU ganti database.js)
+const { Pool } = require('pg');
 
-const db = mysql.createConnection({
-  host: "localhost",
-  user: "admin",
-  password: "Mayoni_8829", // Password yang benar
-  database: "absensi_db",
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0, // BENAR: queueLimit, BUKAN quenelimit
+// Config dari Supabase Dashboard
+const pool = new Pool({
+  host: 'db.[your-project-ref].supabase.co',
+  port: 5432,
+  database: 'postgres',
+  user: 'postgres',
+  password: '[your-database-password]', // BUKAN password akun Supabase
+  ssl: {
+    rejectUnauthorized: false // Supabase butuh SSL
+  },
+  max: 10, // connection limit
+  idleTimeoutMillis: 30000
 });
 
-db.connect((err) => {
+// Test connection
+pool.connect((err, client, release) => {
   if (err) {
-    console.error("❌ Error koneksi database:", err.code);
-    console.log("\n💡 SOLUSI:");
-    console.log("1. Coba login dengan: mysql -u admin -pMayoni_8829");
-    console.log("2. Jika gagal, reset password admin:");
-    console.log("   sudo mysql");
-    console.log(
-      "   ALTER USER 'admin'@'localhost' IDENTIFIED BY 'Mayoni_8829';"
-    );
-    console.log("   FLUSH PRIVILEGES;");
+    console.error('❌ Error connecting to Supabase:', err.message);
+    console.log('\n💡 Tips:');
+    console.log('1. Dapatkan password di: Supabase → Settings → Database');
+    console.log('2. Format host: db.[project-ref].supabase.co');
+    console.log('3. Port: 5432 (PostgreSQL)');
     return;
   }
-  console.log("✅ BERHASIL terhubung ke MySQL sebagai: admin");
-  console.log("   Database: absensi_db");
-  console.log("   Status: Connected");
+  console.log('✅ BERHASIL terhubung ke Supabase PostgreSQL!');
+  client.query('SELECT NOW()', (err, result) => {
+    release();
+    if (err) {
+      console.error('Error executing query:', err.message);
+    } else {
+      console.log('Server time:', result.rows[0].now);
+    }
+  });
 });
 
-// Handle connection errors
-db.on("error", (err) => {
-  if (err.code === "PROTOCOL_CONNECTION_LOST") {
-    console.log("⚠️  Koneksi database terputus, mencoba reconnect...");
-    db.connect();
-  } else {
-    console.error("Database error:", err.message);
-  }
-});
-
-module.exports = db;
+module.exports = pool;
