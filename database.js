@@ -1,69 +1,68 @@
-// database.js - Untuk Supabase PostgreSQL
+// database.js - UNTUK SUPABASE
 const { Pool } = require('pg');
 
-// ⚠️ GANTI PASSWORD_DISINI dengan password dari Supabase!
+// ⚠️ GANTI [YOUR-PASSWORD] DENGAN PASSWORD KAMU!
+const connectionString = 'postgresql://postgres:[YOUR-PASSWORD]@db.sjxdvukiaefydsihwydc.supabase.co:5432/postgres';
+
 const pool = new Pool({
-  host: 'db.sjxdvukiaefydsihwydc.supabase.co',
-  port: 5432,
-  database: 'postgres',
-  user: 'postgres',
-  password: 'password_kamu', // ← GANTI INI!
+  connectionString: connectionString,
   ssl: {
-    rejectUnauthorized: false // WAJIB ADA
-  },
-  max: 10,
-  idleTimeoutMillis: 30000
+    rejectUnauthorized: false // WAJIB UNTUK SUPABASE!
+  }
 });
 
-// Fungsi koneksi biasa seperti MySQL
+// Buat interface mirip mysql2
 const db = {
-  query: (text, params, callback) => {
+  query: function(sql, params, callback) {
+    // Jika params adalah callback (tanpa parameter)
     if (typeof params === 'function') {
       callback = params;
       params = [];
     }
-    return pool.query(text, params, callback);
+    
+    console.log('📤 Executing:', sql.substring(0, 100) + (sql.length > 100 ? '...' : ''));
+    
+    return pool.query(sql, params, (err, result) => {
+      if (err) {
+        console.error('❌ Database Error:', err.message);
+      }
+      if (callback) {
+        callback(err, result);
+      }
+    });
+  },
+  
+  // Untuk async/await
+  queryAsync: function(sql, params) {
+    return pool.query(sql, params);
   }
 };
 
-// Test connection saat startup
-pool.connect((err, client, release) => {
-  if (err) {
-    console.error('❌ GAGAL konek ke Supabase:', err.message);
-    console.log('\n💡 SOLUSI:');
-    console.log('1. Buka: https://supabase.com/dashboard/project/sjxdvukiaefydsihwydc');
-    console.log('2. Settings → Database → Connection String');
-    console.log('3. Klik "Reveal" → copy password');
-    console.log('4. Paste password di line 11 (ganti "password_kamu")');
-    return;
-  }
-  
-  console.log('✅ BERHASIL konek ke Supabase PostgreSQL!');
-  
-  // Cek apakah tabel kita ada
-  client.query(`
-    SELECT table_name 
-    FROM information_schema.tables 
-    WHERE table_schema = 'public'
-    AND table_name IN ('users', 'absensi')
-  `, (err, result) => {
-    release();
-    
+// Test otomatis saat aplikasi start
+setTimeout(() => {
+  db.query('SELECT NOW() as waktu', (err, result) => {
     if (err) {
-      console.error('Error cek tabel:', err.message);
-      return;
-    }
-    
-    const tables = result.rows.map(r => r.table_name);
-    console.log('📋 Tabel ditemukan:', tables.length > 0 ? tables.join(', ') : '(belum ada)');
-    
-    if (tables.length === 0) {
-      console.log('⚠️  Tabel kosong! Run SQL di Supabase dulu:');
-      console.log('   1. Buka SQL Editor');
-      console.log('   2. Paste script SQL');
-      console.log('   3. Klik "Run"');
+      console.log('\n❌ DATABASE ERROR!');
+      console.log('Pesan:', err.message);
+      console.log('\n💡 SOLUSI:');
+      console.log('1. GANTI [YOUR-PASSWORD] di line 7');
+      console.log('2. Contoh: postgresql://postgres:Mayoni_8829@db.sjxdvukiaefydsihwydc.supabase.co:5432/postgres');
+      console.log('3. Save file dan coba lagi');
+    } else {
+      console.log('✅ SUPABASE CONNECTED!');
+      console.log('   Server time:', result.rows[0].waktu);
+      
+      // Cek apakah tabel kita ada
+      db.query(`SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'`, 
+        (err, result) => {
+          if (!err) {
+            const tables = result.rows.map(r => r.table_name);
+            console.log('📋 Tables:', tables.length > 0 ? tables.join(', ') : 'No tables yet');
+          }
+        }
+      );
     }
   });
-});
+}, 1500);
 
 module.exports = db;
