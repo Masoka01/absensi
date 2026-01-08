@@ -1,39 +1,73 @@
-// File: supabase.js (ATAU ganti database.js)
 const { Pool } = require('pg');
+require('dotenv').config();
 
-// Config dari Supabase Dashboard
+// Pool configuration untuk Supabase
 const pool = new Pool({
-  host: 'db.[your-project-ref].supabase.co',
+  host: 'db.sjxdvukiaefydsihwydc.supabase.co',
   port: 5432,
   database: 'postgres',
   user: 'postgres',
-  password: '[your-database-password]', // BUKAN password akun Supabase
+  password: process.env.DB_PASSWORD, // Simpan di .env
   ssl: {
-    rejectUnauthorized: false // Supabase butuh SSL
+    rejectUnauthorized: false // WAJIB untuk Supabase
   },
-  max: 10, // connection limit
-  idleTimeoutMillis: 30000
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000
 });
 
-// Test connection
-pool.connect((err, client, release) => {
-  if (err) {
-    console.error('❌ Error connecting to Supabase:', err.message);
-    console.log('\n💡 Tips:');
-    console.log('1. Dapatkan password di: Supabase → Settings → Database');
-    console.log('2. Format host: db.[project-ref].supabase.co');
-    console.log('3. Port: 5432 (PostgreSQL)');
-    return;
+// Test connection function
+async function testConnection() {
+  let client;
+  try {
+    client = await pool.connect();
+    console.log('✅ SUCCESS: Connected to Supabase PostgreSQL!');
+    
+    // Cek database
+    const result = await client.query('SELECT version()');
+    console.log('📊 PostgreSQL Version:', result.rows[0].version.split(',')[0]);
+    
+    // Cek tabel kita
+    const tables = await client.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public'
+      ORDER BY table_name
+    `);
+    
+    console.log('📋 Tables found:', tables.rows.length);
+    tables.rows.forEach(table => {
+      console.log(`   - ${table.table_name}`);
+    });
+    
+  } catch (error) {
+    console.error('❌ ERROR connecting to Supabase:');
+    console.error('Message:', error.message);
+    console.log('\n🔧 SOLUTIONS:');
+    console.log('1. Cek password di: Supabase → Settings → Database');
+    console.log('2. Buka file .env, pastikan DB_PASSWORD benar');
+    console.log('3. Enable SSL di kode (rejectUnauthorized: false)');
+  } finally {
+    if (client) client.release();
   }
-  console.log('✅ BERHASIL terhubung ke Supabase PostgreSQL!');
-  client.query('SELECT NOW()', (err, result) => {
-    release();
-    if (err) {
-      console.error('Error executing query:', err.message);
-    } else {
-      console.log('Server time:', result.rows[0].now);
-    }
-  });
+}
+
+// Jalankan test saat development
+if (process.env.NODE_ENV !== 'production') {
+  testConnection();
+}
+
+// Handle pool events
+pool.on('connect', () => {
+  console.log('🟢 New client connected to Supabase');
 });
 
-module.exports = pool;
+pool.on('error', (err) => {
+  console.error('🔴 PostgreSQL Pool Error:', err.message);
+});
+
+module.exports = {
+  query: (text, params) => pool.query(text, params),
+  pool,
+  testConnection
+};
