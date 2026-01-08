@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1><i class="fas fa-file-medical"></i> Form Izin / Sakit</h1>
+        <p class="subtitle">Laporkan ketidakhadiran Anda</p>
+      </header>
+
+      <!-- User Info -->
+      <% if (user) { %>
+      <div class="user-info">
+        <div class="user-details">
+          <i class="fas fa-user-circle"></i>
+          <strong><%= username %></strong>
+          <span class="role-user">MITRA</span>
+        </div>
+        <a href="/logout" class="logout-btn">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </a>
+      </div>
+      <% } %>
+
+      <div class="form-container">
+        <form action="/izin" method="POST">
+          <div class="form-group">
+            <label><i class="fas fa-user"></i> Nama</label>
+            <input
+              type="text"
+              name="nama"
+              value="<%= username %>"
+              readonly
+              style="background-color: #f8f9fa"
+            />
+          </div>
+
+          <div class="form-group">
+            <label><i class="fas fa-calendar"></i> Tanggal</label>
+            <input
+              type="date"
+              name="tanggal"
+              value="<%= new Date().toISOString().split('T')[0] %>"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label><i class="fas fa-clipboard-list"></i> Jenis</label>
+            <select name="status" required>
+              <option value="">Pilih jenis...</option>
+              <option value="izin">Izin</option>
+              <option value="sakit">Sakit</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label><i class="fas fa-comment"></i> Keterangan</label>
+            <textarea
+              name="keterangan"
+              rows="4"
+              placeholder="Alasan izin/sakit..."
+              required
+            ></textarea>
+          </div>
+
+          <button type="submit" class="btn" style="width: 100%">
+            <i class="fas fa-paper-plane"></i> Kirim Laporan
+          </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 30px">
+          <a href="/" class="btn btn-back">
+            <i class="fas fa-arrow-left"></i> Kembali ke Beranda
+          </a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

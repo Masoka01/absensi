@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1><i class="fas fa-sign-in-alt"></i> Check-in Karyawan</h1>
+        <p class="subtitle">Lakukan check-in untuk mencatat kehadiran</p>
+      </header>
+
+      <!-- User Info -->
+      <% if (user) { %>
+      <div class="user-info">
+        <div class="user-details">
+          <i class="fas fa-user-circle"></i>
+          <strong><%= username %></strong>
+          <span class="role-user">MITRA</span>
+        </div>
+        <a href="/logout" class="logout-btn">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </a>
+      </div>
+      <% } %>
+
+      <div class="form-container">
+        <div style="text-align: center; margin-bottom: 30px">
+          <i class="fas fa-clock" style="font-size: 4rem; color: #28a745"></i>
+          <h2 style="margin-top: 20px">Check-in Sekarang</h2>
+          <p>
+            Anda akan melakukan check-in dengan username:
+            <strong><%= username %></strong>
+          </p>
+          <p
+            id="currentTime"
+            style="font-size: 1.2rem; font-weight: bold; color: #2575fc"
+          ></p>
+        </div>
+
+        <form action="/checkin" method="POST">
+          <div class="form-group">
+            <label><i class="fas fa-user"></i> Username</label>
+            <input
+              type="text"
+              value="<%= username %>"
+              readonly
+              style="background-color: #f8f9fa"
+            />
+          </div>
+
+          <div class="form-group">
+            <label><i class="fas fa-calendar"></i> Tanggal</label>
+            <input type="text" id="tanggal" readonly />
+          </div>
+
+          <div class="form-group">
+            <label><i class="fas fa-clock"></i> Jam Masuk</label>
+            <input type="text" id="jam" readonly />
+          </div>
+
+          <button type="submit" class="btn" style="width: 100%">
+            <i class="fas fa-check-circle"></i> Check-in Sekarang
+          </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 30px">
+          <a href="/" class="btn btn-back">
+            <i class="fas fa-arrow-left"></i> Kembali ke Beranda
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Update waktu real-time
+      function updateTime() {
+        const now = new Date();
+        const dateStr = now.toLocaleDateString("id-ID", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+        const timeStr = now.toLocaleTimeString("id-ID");
+
+        document.getElementById("tanggal").value = dateStr;
+        document.getElementById("jam").value = timeStr;
+        document.getElementById("currentTime").textContent = timeStr;
+      }
+
+      // Update setiap detik
+      updateTime();
+      setInterval(updateTime, 1000);
+    </script>
+  </body>
+</html>

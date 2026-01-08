@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1><i class="fas fa-fingerprint"></i> Sistem Absensi Digital</h1>
+        <p class="subtitle">
+          <% if (user) { %> Selamat datang, <%= user.username %>! <% } else { %>
+          Silakan login untuk mengakses sistem <% } %>
+        </p>
+      </header>
+
+      <!-- User Info -->
+      <% if (user) { %>
+      <div class="user-info">
+        <div class="user-details">
+          <i class="fas fa-user-circle"></i>
+          <strong><%= user.username %></strong>
+          <% if (user.role === 'admin') { %>
+          <span class="role-admin">HRD</span>
+          <% } else { %>
+          <span class="role-user">MITRA</span>
+          <% } %>
+        </div>
+        <a href="/logout" class="logout-btn">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </a>
+      </div>
+      <% } else { %>
+      <div class="login-prompt">
+        <h3><i class="fas fa-lock"></i> Sistem Terkunci</h3>
+        <p>Login diperlukan untuk mengakses semua fitur</p>
+        <a href="/login" class="btn-login">
+          <i class="fas fa-sign-in-alt"></i> Login Sekarang
+        </a>
+      </div>
+      <% } %>
+
+      <div class="menu-grid">
+        <!-- Menu 1: Check-in (HANYA MITRA) -->
+        <% if (user && user.role === 'user') { %>
+        <a href="/checkin" class="menu-card">
+          <div class="menu-icon">
+            <i class="fas fa-sign-in-alt"></i>
+          </div>
+          <h2>Check-in</h2>
+          <p>Absensi masuk karyawan</p>
+          <div class="menu-badge green">MITRA ONLY</div>
+        </a>
+        <% } else if (user && user.role === 'admin') { %>
+        <div class="menu-card locked">
+          <div class="menu-icon">
+            <i class="fas fa-ban"></i>
+          </div>
+          <h2>Check-in</h2>
+          <p>Absensi masuk karyawan</p>
+          <div class="menu-badge">Hanya untuk MITRA</div>
+        </div>
+        <% } else { %>
+        <div class="menu-card locked">
+          <div class="menu-icon">
+            <i class="fas fa-lock"></i>
+          </div>
+          <h2>Check-in</h2>
+          <p>Absensi masuk karyawan</p>
+          <div class="menu-badge">Butuh Login MITRA</div>
+        </div>
+        <% } %>
+
+        <!-- Menu 2: Izin/Sakit (HANYA MITRA) -->
+        <% if (user && user.role === 'user') { %>
+        <a href="/izin" class="menu-card">
+          <div class="menu-icon">
+            <i class="fas fa-file-medical"></i>
+          </div>
+          <h2>Izin / Sakit</h2>
+          <p>Laporkan ketidakhadiran</p>
+          <div class="menu-badge green">MITRA ONLY</div>
+        </a>
+        <% } else if (user && user.role === 'admin') { %>
+        <div class="menu-card locked">
+          <div class="menu-icon">
+            <i class="fas fa-ban"></i>
+          </div>
+          <h2>Izin / Sakit</h2>
+          <p>Laporkan ketidakhadiran</p>
+          <div class="menu-badge">Hanya untuk MITRA</div>
+        </div>
+        <% } else { %>
+        <div class="menu-card locked">
+          <div class="menu-icon">
+            <i class="fas fa-lock"></i>
+          </div>
+          <h2>Izin / Sakit</h2>
+          <p>Laporkan ketidakhadiran</p>
+          <div class="menu-badge">Butuh Login MITRA</div>
+        </div>
+        <% } %>
+
+        <!-- Menu 3: Check-out (HANYA MITRA) -->
+        <% if (user && user.role === 'user') { %>
+        <a href="/checkout" class="menu-card">
+          <div class="menu-icon">
+            <i class="fas fa-sign-out-alt"></i>
+          </div>
+          <h2>Check-out</h2>
+          <p>Update jam pulang karyawan</p>
+          <div class="menu-badge green">MITRA ONLY</div>
+        </a>
+        <% } else if (user && user.role === 'admin') { %>
+        <div class="menu-card locked">
+          <div class="menu-icon">
+            <i class="fas fa-ban"></i>
+          </div>
+          <h2>Check-out</h2>
+          <p>Update jam pulang karyawan</p>
+          <div class="menu-badge">Hanya untuk MITRA</div>
+        </div>
+        <% } else { %>
+        <div class="menu-card locked">
+          <div class="menu-icon">
+            <i class="fas fa-lock"></i>
+          </div>
+          <h2>Check-out</h2>
+          <p>Update jam pulang karyawan</p>
+          <div class="menu-badge">Butuh Login MITRA</div>
+        </div>
+        <% } %>
+
+        <!-- Menu 4: Laporan (HANYA HRD) -->
+        <% if (user && user.role === 'admin') { %>
+        <a href="/laporan" class="menu-card">
+          <div class="menu-icon">
+            <i class="fas fa-chart-bar"></i>
+          </div>
+          <h2>Laporan</h2>
+          <p>Lihat rekapan lengkap</p>
+          <div class="menu-badge hrd-only">HRD ONLY</div>
+        </a>
+        <% } else if (user && user.role === 'user') { %>
+        <div class="menu-card locked">
+          <div class="menu-icon">
+            <i class="fas fa-ban"></i>
+          </div>
+          <h2>Laporan</h2>
+          <p>Lihat rekapan lengkap</p>
+          <div class="menu-badge">Hanya untuk HRD</div>
+        </div>
+        <% } else { %>
+        <div class="menu-card locked">
+          <div class="menu-icon">
+            <i class="fas fa-lock"></i>
+          </div>
+          <h2>Laporan</h2>
+          <p>Lihat rekapan lengkap</p>
+          <div class="menu-badge">Butuh Login HRD</div>
+        </div>
+        <% } %>
+      </div>
+
+      <!-- Statistik -->
+      <div class="stats-section">
+        <h3>
+          <i class="fas fa-chart-pie"></i> Statistik Hari Ini (<span
+            id="todayDate"
+          ></span
+          >)
+        </h3>
+        <div class="stats-grid">
+          <div class="stat-card hadir">
+            <h4>Hadir</h4>
+            <p id="countHadir" class="stat-number">0</p>
+          </div>
+          <div class="stat-card izin">
+            <h4>Izin</h4>
+            <p id="countIzin" class="stat-number">0</p>
+          </div>
+          <div class="stat-card sakit">
+            <h4>Sakit</h4>
+            <p id="countSakit" class="stat-number">0</p>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <p>&copy; 2026 Absensi Digital | Mayoni</p>
+      </footer>
+    </div>
+
+    <script>
+      // Tampilkan tanggal hari ini
+      const today = new Date();
+      document.getElementById("todayDate").textContent =
+        today.toLocaleDateString("id-ID");
+
+      // Fetch statistik dari API
+      fetch("/api/stats")
+        .then((res) => res.json())
+        .then((data) => {
+          document.getElementById("countHadir").textContent = data.hadir || 0;
+          document.getElementById("countIzin").textContent = data.izin || 0;
+          document.getElementById("countSakit").textContent = data.sakit || 0;
+        })
+        .catch((err) => console.error("Error loading stats:", err));
+    </script>
+  </body>
+</html>
