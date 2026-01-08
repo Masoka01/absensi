@@ -2,7 +2,7 @@
 const { Pool } = require('pg');
 
 // ⚠️ GANTI [YOUR-PASSWORD] DENGAN PASSWORD KAMU!
-const connectionString = 'postgresql://postgres:[YOUR-PASSWORD]@db.sjxdvukiaefydsihwydc.supabase.co:5432/postgres';
+const connectionString = 'postgresql://postgres:Mayoni_8829@db.sjxdvukiaefydsihwydc.supabase.co:5432/postgres';
 
 const pool = new Pool({
   connectionString: connectionString,
