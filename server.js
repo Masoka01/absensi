@@ -11,6 +11,7 @@ app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.use(express.static(path.join(__dirname, "public")));
 app.use(express.urlencoded({ extended: true }));
+
 app.use(
   session({
     secret: "absensi-secret-key-2024",
@@ -28,9 +29,7 @@ app.use((req, res, next) => {
 
 // ========== AUTH MIDDLEWARE ==========
 const requireLogin = (req, res, next) => {
-  if (!req.session.user) {
-    return res.redirect("/login");
-  }
+  if (!req.session.user) return res.redirect("/login");
   next();
 };
 
@@ -56,8 +55,6 @@ const requireHRD = (req, res, next) => {
 
 // ========== ROUTES ==========
 
-// ----- PUBLIC ROUTES -----
-
 // Home
 app.get("/", (req, res) => {
   res.render("index", { title: "Absensi Digital" });
@@ -69,12 +66,16 @@ app.get("/login", (req, res) => {
   res.render("login", { title: "Login", error: null });
 });
 
-app.post("/login", (req, res) => {
+app.post("/login", async (req, res) => {
   const { username, password } = req.body;
-  const sql = "SELECT * FROM users WHERE username = ?";
 
-  db.query(sql, [username], async (err, results) => {
-    if (err || results.length === 0) {
+  try {
+    const [results] = await db.query(
+      "SELECT * FROM users WHERE username = ?",
+      [username]
+    );
+
+    if (results.length === 0 || password !== results[0].password) {
       return res.render("login", {
         title: "Login",
         error: "Username atau password salah",
@@ -83,14 +84,6 @@ app.post("/login", (req, res) => {
 
     const user = results[0];
 
-    // Simple password check (plain text)
-    if (password !== user.password) {
-      return res.render("login", {
-        title: "Login",
-        error: "Username atau password salah",
-      });
-    }
-
     req.session.user = {
       id: user.id,
       username: user.username,
@@ -98,7 +91,13 @@ app.post("/login", (req, res) => {
     };
 
     res.redirect("/");
-  });
+  } catch (err) {
+    console.error(err);
+    res.render("login", {
+      title: "Login",
+      error: "Terjadi kesalahan server",
+    });
+  }
 });
 
 // Logout
@@ -107,9 +106,8 @@ app.get("/logout", (req, res) => {
   res.redirect("/login");
 });
 
-// ----- MITRA ROUTES (Check-in, Izin, Check-out) -----
+// ----- MITRA -----
 
-// Check-in (HANYA MITRA - role: user)
 app.get("/checkin", requireMitra, (req, res) => {
   res.render("checkin", {
     title: "Check-in Karyawan",
@@ -117,24 +115,24 @@ app.get("/checkin", requireMitra, (req, res) => {
   });
 });
 
-app.post("/checkin", requireMitra, (req, res) => {
+app.post("/checkin", requireMitra, async (req, res) => {
   const nama = req.session.user.username;
   const tanggal = new Date().toISOString().split("T")[0];
   const jam_masuk = new Date().toTimeString().slice(0, 8);
 
-  const sql =
-    'INSERT INTO absensi (nama, tanggal, jam_masuk, status) VALUES (?, ?, ?, "hadir")';
-  db.query(sql, [nama, tanggal, jam_masuk], (err) => {
-    if (err) {
-      console.error(err);
-      res.send("Error menyimpan check-in");
-      return;
-    }
+  try {
+    await db.query(
+      'INSERT INTO absensi (nama, tanggal, jam_masuk, status) VALUES (?, ?, ?, "hadir")',
+      [nama, tanggal, jam_masuk]
+    );
     res.redirect("/");
-  });
+  } catch (err) {
+    console.error(err);
+    res.send("Error menyimpan check-in");
+  }
 });
 
-// Izin/Sakit (HANYA MITRA - role: user)
+// Izin
 app.get("/izin", requireMitra, (req, res) => {
   res.render("izin", {
     title: "Form Izin / Sakit",
@@ -142,102 +140,102 @@ app.get("/izin", requireMitra, (req, res) => {
   });
 });
 
-app.post("/izin", requireMitra, (req, res) => {
+app.post("/izin", requireMitra, async (req, res) => {
   const nama = req.session.user.username;
   const tanggal = new Date().toISOString().split("T")[0];
   const { status, keterangan } = req.body;
 
-  const sql =
-    'INSERT INTO absensi (nama, tanggal, status, jam_masuk, keterangan) VALUES (?, ?, ?, "00:00:00", ?)';
-  db.query(sql, [nama, tanggal, status, keterangan], (err) => {
-    if (err) {
-      console.error(err);
-      res.send("Error menyimpan izin/sakit");
-      return;
-    }
+  try {
+    await db.query(
+      'INSERT INTO absensi (nama, tanggal, status, jam_masuk, keterangan) VALUES (?, ?, ?, "00:00:00", ?)',
+      [nama, tanggal, status, keterangan]
+    );
     res.redirect("/");
-  });
+  } catch (err) {
+    console.error(err);
+    res.send("Error menyimpan izin/sakit");
+  }
 });
 
-// Check-out (HANYA MITRA - role: user)
-app.get("/checkout", requireMitra, (req, res) => {
-  const sql =
-    'SELECT * FROM absensi WHERE jam_keluar IS NULL AND status = "hadir" ORDER BY tanggal DESC, id DESC';
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.error(err);
-      res.send("Error mengambil data");
-      return;
-    }
+// Checkout
+app.get("/checkout", requireMitra, async (req, res) => {
+  try {
+    const [results] = await db.query(
+      'SELECT * FROM absensi WHERE jam_keluar IS NULL AND status = "hadir" ORDER BY tanggal DESC, id DESC'
+    );
     res.render("checkout", {
       title: "Check-out Karyawan",
       data: results,
     });
-  });
+  } catch (err) {
+    console.error(err);
+    res.send("Error mengambil data");
+  }
 });
 
-app.post("/checkout/:id", requireMitra, (req, res) => {
+app.post("/checkout/:id", requireMitra, async (req, res) => {
   const jam_keluar = new Date().toTimeString().slice(0, 8);
-  const sql = "UPDATE absensi SET jam_keluar = ? WHERE id = ?";
-  db.query(sql, [jam_keluar, req.params.id], (err) => {
-    if (err) {
-      console.error(err);
-      res.send("Error update check-out");
-      return;
-    }
+
+  try {
+    await db.query(
+      "UPDATE absensi SET jam_keluar = ? WHERE id = ?",
+      [jam_keluar, req.params.id]
+    );
     res.redirect("/checkout");
-  });
+  } catch (err) {
+    console.error(err);
+    res.send("Error update check-out");
+  }
 });
 
-// ----- HRD ROUTES (Laporan saja) -----
+// ----- HRD -----
 
-// Laporan (HANYA HRD - role: admin)
-app.get("/laporan", requireHRD, (req, res) => {
-  const sql = "SELECT * FROM absensi ORDER BY tanggal DESC, id DESC";
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.error(err);
-      res.send("Error mengambil data");
-      return;
-    }
+app.get("/laporan", requireHRD, async (req, res) => {
+  try {
+    const [results] = await db.query(
+      "SELECT * FROM absensi ORDER BY tanggal DESC, id DESC"
+    );
     res.render("laporan", {
       title: "Laporan Absensi",
       data: results,
     });
-  });
+  } catch (err) {
+    console.error(err);
+    res.send("Error mengambil data");
+  }
 });
 
-// Delete (HANYA HRD - role: admin)
-app.get("/delete/:id", requireHRD, (req, res) => {
-  const sql = "DELETE FROM absensi WHERE id = ?";
-  db.query(sql, [req.params.id], (err) => {
-    if (err) {
-      console.error(err);
-      res.send("Error menghapus data");
-      return;
-    }
+app.get("/delete/:id", requireHRD, async (req, res) => {
+  try {
+    await db.query("DELETE FROM absensi WHERE id = ?", [req.params.id]);
     res.redirect("/laporan");
-  });
+  } catch (err) {
+    console.error(err);
+    res.send("Error menghapus data");
+  }
 });
 
-// API Statistik (public)
-app.get("/api/stats", (req, res) => {
+// API Statistik
+app.get("/api/stats", async (req, res) => {
   const today = new Date().toISOString().split("T")[0];
-  const sql = `
-        SELECT 
-            SUM(status = 'hadir') AS hadir,
-            SUM(status = 'izin') AS izin,
-            SUM(status = 'sakit') AS sakit
-        FROM absensi 
-        WHERE tanggal = ?
-    `;
-  db.query(sql, [today], (err, results) => {
-    if (err) {
-      res.json({ hadir: 0, izin: 0, sakit: 0 });
-    } else {
-      res.json(results[0] || { hadir: 0, izin: 0, sakit: 0 });
-    }
-  });
+
+  try {
+    const [results] = await db.query(
+      `
+      SELECT 
+        SUM(status = 'hadir') AS hadir,
+        SUM(status = 'izin') AS izin,
+        SUM(status = 'sakit') AS sakit
+      FROM absensi 
+      WHERE tanggal = ?
+    `,
+      [today]
+    );
+
+    res.json(results[0] || { hadir: 0, izin: 0, sakit: 0 });
+  } catch (err) {
+    res.json({ hadir: 0, izin: 0, sakit: 0 });
+  }
 });
 
 // Error page
