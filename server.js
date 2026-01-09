@@ -255,3 +255,7 @@ const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`Server berjalan di http://localhost:${PORT}`);
 });
+
+app.get("/health", (req, res) => {
+  res.send("Server hidup dan waras 😄");
+});
